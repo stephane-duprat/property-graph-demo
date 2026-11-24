@@ -1,0 +1,63 @@
+{
+  "examples": [
+    {
+      "id": "pagerank",
+      "label": "PageRank",
+      "title": "Which people receive the most structural importance?",
+      "description": "Every incoming link contributes a share of its source score. This is a property of the directed network, not a judgment about the person.",
+      "note": "The browser computes a mathematical reference result for the baseline data. It does not invoke Oracle. SQL uses up to 1,000 iterations, tolerance 1e-10, damping 0.85 and normalization.",
+      "sql": "SELECT person_id, person_name, ROUND(score, 6) AS pagerank_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PAGERANK(\n    pgd_rel_graph,\n    PROPERTY(VERTEX OUTPUT pr_score),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.pr_score AS score)\n)\nORDER BY score DESC, person_id;"
+    },
+    {
+      "id": "personal",
+      "label": "Personalized",
+      "title": "How does the ranking change when Alice is the focus?",
+      "description": "Personalized PageRank biases the ranking toward Alice. Compare the scores with the global PageRank result.",
+      "note": "The seed is a complete graph vertex identifier. PEOPLE is the element alias; person_id is the key. The query constructs the identifier for the connected graph owner.",
+      "sql": "SELECT person_id, person_name, ROUND(score, 6) AS alice_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PERSONALIZED_PAGERANK(\n    pgd_rel_graph,\n    PROPERTY(VERTEX OUTPUT ppr_score),\n    JSON_OBJECT(\n      'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n      'GRAPH_NAME' VALUE 'PGD_REL_GRAPH',\n      'ELEM_TABLE' VALUE 'PEOPLE',\n      'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n      RETURNING JSON\n    ),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.ppr_score AS score)\n)\nORDER BY score DESC, person_id;"
+    },
+    {
+      "id": "seedset",
+      "label": "Seed set",
+      "title": "What if Alice and Carla are both the focus?",
+      "description": "PERSONALIZED_PAGERANK_SET gives equal preference to the two selected seed vertices. Its input is an array of graph vertex identifiers.",
+      "note": "Changing the input graph also changes the GRAPH_NAME in each seed identity. Query VERTEX_ID on that graph to obtain the correct identifiers.",
+      "sql": "SELECT person_id, person_name, ROUND(score, 6) AS seed_set_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PERSONALIZED_PAGERANK_SET(\n    pgd_rel_graph,\n    PROPERTY(VERTEX OUTPUT set_score),\n    JSON_ARRAY(\n      JSON_OBJECT(\n        'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n        'GRAPH_NAME' VALUE 'PGD_REL_GRAPH',\n        'ELEM_TABLE' VALUE 'PEOPLE',\n        'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n        RETURNING JSON\n      ),\n      JSON_OBJECT(\n        'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n        'GRAPH_NAME' VALUE 'PGD_REL_GRAPH',\n        'ELEM_TABLE' VALUE 'PEOPLE',\n        'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 3)\n        RETURNING JSON\n      )\n      RETURNING JSON\n    ),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.set_score AS score)\n)\nORDER BY score DESC, person_id;"
+    },
+    {
+      "id": "wcc",
+      "label": "Components",
+      "title": "How many disconnected groups exist?",
+      "description": "WCC ignores arrow direction and groups all people connected by any chain of links. This dataset is one weakly connected component.",
+      "note": "The browser labels the single group for explanation. Oracle component IDs are opaque, may be non-contiguous, and can change between runs. WCC is not community detection.",
+      "sql": "SELECT component_id, COUNT(*) AS people_count,\n       LISTAGG(person_name, ', ') WITHIN GROUP (ORDER BY person_name) AS members\nFROM GRAPH_TABLE (\n  DBMS_OGA.WCC(\n    pgd_rel_graph, PROPERTY(VERTEX OUTPUT component_id)\n  )\n  MATCH (p IS person)\n  COLUMNS (p.name AS person_name, p.component_id AS component_id)\n)\nGROUP BY component_id\nORDER BY people_count DESC, members;"
+    },
+    {
+      "id": "hops",
+      "label": "Fewest hops",
+      "title": "What is the minimum number of outgoing steps from Alice?",
+      "description": "BELLMAN_FORD with hop_cost = 1 turns weighted shortest distance into minimum hop count. Unlike the earlier fixed two-hop pattern, it computes a minimum for every destination.",
+      "note": "Run the PGD_COST_GRAPH setup first. Output values are distances; the algorithm does not return a path sequence. Unreachable vertices receive positive infinity.",
+      "sql": "SELECT person_id, person_name, min_hops\nFROM GRAPH_TABLE (\n  DBMS_OGA.BELLMAN_FORD(\n    pgd_cost_graph,\n    JSON_OBJECT(\n      'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n      'GRAPH_NAME' VALUE 'PGD_COST_GRAPH',\n      'ELEM_TABLE' VALUE 'PEOPLE',\n      'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n      RETURNING JSON\n    ),\n    PROPERTY(EDGE INPUT hop_cost DEFAULT ON NULL 1),\n    PROPERTY(VERTEX OUTPUT min_hops)\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.min_hops AS min_hops)\n)\nORDER BY person_id;"
+    },
+    {
+      "id": "effort",
+      "label": "Lowest cost",
+      "title": "Can a longer route cost less?",
+      "description": "Alice \u2192 Carla costs 9. Alice \u2192 Bob \u2192 Elena \u2192 Carla costs 1 + 1 + 1 = 3. The cheapest route to Carla takes three hops.",
+      "note": "These fictional effort values are expressions in graph metadata. No row is copied or updated. Oracle Bellman-Ford does not accept negative weights; expression inputs require DEFAULT ON NULL.",
+      "sql": "SELECT person_id, person_name, min_effort\nFROM GRAPH_TABLE (\n  DBMS_OGA.BELLMAN_FORD(\n    pgd_cost_graph,\n    JSON_OBJECT(\n      'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n      'GRAPH_NAME' VALUE 'PGD_COST_GRAPH',\n      'ELEM_TABLE' VALUE 'PEOPLE',\n      'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n      RETURNING JSON\n    ),\n    PROPERTY(EDGE INPUT effort DEFAULT ON NULL 1),\n    PROPERTY(VERTEX OUTPUT min_effort)\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.min_effort AS min_effort)\n)\nORDER BY person_id;"
+    }
+  ],
+  "cost_ddl": "CREATE OR REPLACE PROPERTY GRAPH pgd_cost_graph\n  VERTEX TABLES (\n    pgd_person AS people KEY (person_id)\n      LABEL person PROPERTIES (person_id, person_name AS name, city)\n  )\n  EDGE TABLES (\n    pgd_knows AS links KEY (edge_id)\n      SOURCE KEY (src_id) REFERENCES people (person_id)\n      DESTINATION KEY (dst_id) REFERENCES people (person_id)\n      LABEL knows PROPERTIES (\n        edge_id, since_year,\n        1 AS hop_cost,\n        CASE edge_id\n          WHEN 101 THEN 1 WHEN 102 THEN 9 WHEN 103 THEN 2\n          WHEN 104 THEN 1 WHEN 105 THEN 1 WHEN 106 THEN 1\n          WHEN 107 THEN 1 ELSE 1\n        END AS effort\n      )\n  )\n  OPTIONS (ENFORCED MODE);",
+  "costs": {
+    "101": 1,
+    "102": 9,
+    "103": 2,
+    "104": 1,
+    "105": 1,
+    "106": 1,
+    "107": 1
+  },
+  "pattern_query": "SELECT DISTINCT target_name, ROUND(score, 6) AS pagerank_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PAGERANK(\n    pgd_rel_graph, PROPERTY(VERTEX OUTPUT pr_score),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (a IS person)-[e1 IS knows]->(b IS person)\n                     -[e2 IS knows]->(c IS person)\n  WHERE a.person_id = 1\n  COLUMNS (c.name AS target_name, c.pr_score AS score)\n)\nORDER BY pagerank_score DESC, target_name;"
+}

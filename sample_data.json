@@ -1,0 +1,73 @@
+{
+  "people": [
+    {
+      "id": 1,
+      "name": "Alice",
+      "city": "Madrid"
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "city": "Barcelona"
+    },
+    {
+      "id": 3,
+      "name": "Carla",
+      "city": "Madrid"
+    },
+    {
+      "id": 4,
+      "name": "Diego",
+      "city": "Valencia"
+    },
+    {
+      "id": 5,
+      "name": "Elena",
+      "city": "Bilbao"
+    }
+  ],
+  "edges": [
+    {
+      "id": 101,
+      "src": 1,
+      "dst": 2,
+      "since": 2020
+    },
+    {
+      "id": 102,
+      "src": 1,
+      "dst": 3,
+      "since": 2021
+    },
+    {
+      "id": 103,
+      "src": 2,
+      "dst": 4,
+      "since": 2022
+    },
+    {
+      "id": 104,
+      "src": 3,
+      "dst": 4,
+      "since": 2023
+    },
+    {
+      "id": 105,
+      "src": 4,
+      "dst": 1,
+      "since": 2024
+    },
+    {
+      "id": 106,
+      "src": 2,
+      "dst": 5,
+      "since": 2022
+    },
+    {
+      "id": 107,
+      "src": 5,
+      "dst": 3,
+      "since": 2024
+    }
+  ]
+}

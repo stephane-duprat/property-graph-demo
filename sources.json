@@ -1,0 +1,82 @@
+[
+  {
+    "title": "SQL property graphs in Autonomous Graph Studio",
+    "url": "https://docs.oracle.com/en/cloud/paas/autonomous-database/csgru/create-graph-existing-relational-tables.html"
+  },
+  {
+    "title": "Database RU feature boundaries",
+    "url": "https://docs.oracle.com/en/database/oracle/property-graph/26.4/spgdg/key-property-graph-features-oracle-ai-database-26ai.html"
+  },
+  {
+    "title": "Graph creation, views, JSON_TABLE and constraints",
+    "url": "https://docs.oracle.com/en/database/oracle/property-graph/26.4/spgdg/creating-sql-property-graph.html"
+  },
+  {
+    "title": "CREATE PROPERTY GRAPH SQL reference",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-property-graph.html"
+  },
+  {
+    "title": "GRAPH_TABLE operator",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/graph_table-operator.html"
+  },
+  {
+    "title": "JSON collections and virtual columns",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/adjsn/json-collections.html"
+  },
+  {
+    "title": "JSON property expressions",
+    "url": "https://docs.oracle.com/en/database/oracle/property-graph/26.3/spgdg/json-support-sql-property-graphs.html"
+  },
+  {
+    "title": "Creating duality views",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/jsnvu/creating-duality-views.html"
+  },
+  {
+    "title": "CREATE JSON RELATIONAL DUALITY VIEW",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/create-json-relational-duality-view.html"
+  },
+  {
+    "title": "Updating documents through duality views",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/jsnvu/updating-documents-data-duality-views.html"
+  },
+  {
+    "title": "CREATE TABLE: JSON collection restrictions",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/CREATE-TABLE.html"
+  },
+  {
+    "title": "Graph options in Autonomous Graph Studio",
+    "url": "https://docs.oracle.com/en/cloud/paas/autonomous-database/csgru/configure-graph-options-with-modeler.html"
+  },
+  {
+    "title": "GRANT: system and object privileges (SQL Language Reference)",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/GRANT.html"
+  },
+  {
+    "title": "DROP PROPERTY GRAPH: ownership and prerequisites",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/drop-property-graph.html"
+  },
+  {
+    "title": "Privileges to query and share a SQL property graph",
+    "url": "https://docs.oracle.com/en/database/oracle/property-graph/26.4/spgdg/privileges-query-sql-property-graph.html"
+  },
+  {
+    "title": "DBMS_OGA: signatures and property arguments",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/arpls/dbms_oga1.html"
+  },
+  {
+    "title": "Graph algorithms: examples and meanings",
+    "url": "https://docs.oracle.com/en/database/oracle/property-graph/26.4/spgdg/graph-algorithm-functions-supported-dbms_oga.html"
+  },
+  {
+    "title": "Graph algorithm functions: temporary output graphs",
+    "url": "https://docs.oracle.com/en/database/oracle/property-graph/26.4/spgdg/overview-graph-algorithm-function.html"
+  },
+  {
+    "title": "Graph query and algorithm limitations",
+    "url": "https://docs.oracle.com/en/database/oracle/property-graph/26.4/spgdg/supported-feature-and-limitations-when-querying-sql-property-graph.html"
+  },
+  {
+    "title": "Graph reference: algorithm invocation and privileges",
+    "url": "https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/graph-reference.html"
+  }
+]

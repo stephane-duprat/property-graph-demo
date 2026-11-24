@@ -1,0 +1,59 @@
+{
+  "baseline": {
+    "vertex_count": 5,
+    "edge_count": 7
+  },
+  "one_hop_from_alice": [
+    "Bob",
+    "Carla"
+  ],
+  "two_hop_routes": [
+    [
+      "Alice",
+      "Bob",
+      "Diego"
+    ],
+    [
+      "Alice",
+      "Bob",
+      "Elena"
+    ],
+    [
+      "Alice",
+      "Carla",
+      "Diego"
+    ]
+  ],
+  "distinct_two_hop_destinations": [
+    "Diego",
+    "Elena"
+  ],
+  "route_counts": {
+    "Diego": 2,
+    "Elena": 1
+  },
+  "three_edge_cycles_from_alice": [
+    [
+      "Alice",
+      "Bob",
+      "Diego",
+      "Alice"
+    ],
+    [
+      "Alice",
+      "Carla",
+      "Diego",
+      "Alice"
+    ]
+  ],
+  "temporary_edge_108_neighbors": [
+    "Bob",
+    "Carla",
+    "Elena"
+  ],
+  "city_update": {
+    "before": "Valencia",
+    "during": "Sevilla",
+    "after_rollback": "Valencia"
+  }
+}
