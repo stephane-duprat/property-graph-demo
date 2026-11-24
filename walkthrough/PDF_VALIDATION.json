@@ -1,0 +1,13 @@
+{
+  "pdf": "adb26ai-property-graphs-step-by-step.pdf",
+  "pages": 49,
+  "highlighted_copyable_panels": 60,
+  "sql_text_roundtrip": "PASS: every nonblank line matches; blank display lines may be omitted by a viewer",
+  "single_page_sql_panels": "PASS: all 60 code panel rectangles fit one page",
+  "page_geometry_and_footers": "PASS",
+  "all_five_dbms_oga_functions": "PASS",
+  "matching_sql_files": "PASS",
+  "official_source_links": 20,
+  "oracle_execution": "NOT PERFORMED: no ADB connection in this session",
+  "visual_review": "Original full-guide review retained; revised D2 and troubleshooting pages rendered with Poppler and reviewed at full size"
+}

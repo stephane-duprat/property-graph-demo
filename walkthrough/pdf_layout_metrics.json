@@ -1,0 +1,247 @@
+[
+  {
+    "page": 1,
+    "step": "START",
+    "bottom": 244.6
+  },
+  {
+    "page": 2,
+    "step": "INDEX",
+    "bottom": 209.8
+  },
+  {
+    "page": 3,
+    "step": "READ",
+    "bottom": 222.7
+  },
+  {
+    "page": 4,
+    "step": "MAP",
+    "bottom": 324.5
+  },
+  {
+    "page": 5,
+    "step": "00",
+    "bottom": 243.4
+  },
+  {
+    "page": 6,
+    "step": "01",
+    "bottom": 282.7
+  },
+  {
+    "page": 7,
+    "step": "A1",
+    "bottom": 302.0
+  },
+  {
+    "page": 8,
+    "step": "A2",
+    "bottom": 185.5
+  },
+  {
+    "page": 9,
+    "step": "A3",
+    "bottom": 290.0
+  },
+  {
+    "page": 10,
+    "step": "A4",
+    "bottom": 281.3
+  },
+  {
+    "page": 11,
+    "step": "A5",
+    "bottom": 279.2
+  },
+  {
+    "page": 12,
+    "step": "A6",
+    "bottom": 253.9
+  },
+  {
+    "page": 13,
+    "step": "B1",
+    "bottom": 267.2
+  },
+  {
+    "page": 14,
+    "step": "B2",
+    "bottom": 295.3
+  },
+  {
+    "page": 15,
+    "step": "B3",
+    "bottom": 238.3
+  },
+  {
+    "page": 16,
+    "step": "B4",
+    "bottom": 265.3
+  },
+  {
+    "page": 17,
+    "step": "B5",
+    "bottom": 281.5
+  },
+  {
+    "page": 18,
+    "step": "C1",
+    "bottom": 222.7
+  },
+  {
+    "page": 19,
+    "step": "C2",
+    "bottom": 239.7
+  },
+  {
+    "page": 20,
+    "step": "C3",
+    "bottom": 326.9
+  },
+  {
+    "page": 21,
+    "step": "V1",
+    "bottom": 275.9
+  },
+  {
+    "page": 22,
+    "step": "V2",
+    "bottom": 358.9
+  },
+  {
+    "page": 23,
+    "step": "V3",
+    "bottom": 235.3
+  },
+  {
+    "page": 24,
+    "step": "V4",
+    "bottom": 358.4
+  },
+  {
+    "page": 25,
+    "step": "D1",
+    "bottom": 260.1
+  },
+  {
+    "page": 26,
+    "step": "D2",
+    "bottom": 223.8
+  },
+  {
+    "page": 27,
+    "step": "D3",
+    "bottom": 279.2
+  },
+  {
+    "page": 28,
+    "step": "D4",
+    "bottom": 57.9
+  },
+  {
+    "page": 29,
+    "step": "E0",
+    "bottom": 268.5
+  },
+  {
+    "page": 30,
+    "step": "E1",
+    "bottom": 225.2
+  },
+  {
+    "page": 31,
+    "step": "E2",
+    "bottom": 307.4
+  },
+  {
+    "page": 32,
+    "step": "E3",
+    "bottom": 349.0
+  },
+  {
+    "page": 33,
+    "step": "E4",
+    "bottom": 237.3
+  },
+  {
+    "page": 34,
+    "step": "E5",
+    "bottom": 152.7
+  },
+  {
+    "page": 35,
+    "step": "E6",
+    "bottom": 350.1
+  },
+  {
+    "page": 36,
+    "step": "E7",
+    "bottom": 192.9
+  },
+  {
+    "page": 37,
+    "step": "E8",
+    "bottom": 201.9
+  },
+  {
+    "page": 38,
+    "step": "E9",
+    "bottom": 252.9
+  },
+  {
+    "page": 39,
+    "step": "E10",
+    "bottom": 318.7
+  },
+  {
+    "page": 40,
+    "step": "E11",
+    "bottom": 431.9
+  },
+  {
+    "page": 41,
+    "step": "E12",
+    "bottom": 383.9
+  },
+  {
+    "page": 42,
+    "step": "E13",
+    "bottom": 263.9
+  },
+  {
+    "page": 43,
+    "step": "E14",
+    "bottom": 209.9
+  },
+  {
+    "page": 44,
+    "step": "F1",
+    "bottom": 304.1
+  },
+  {
+    "page": 45,
+    "step": "SHARE",
+    "bottom": 417.1
+  },
+  {
+    "page": 46,
+    "step": "CLEAN",
+    "bottom": 220.7
+  },
+  {
+    "page": 47,
+    "step": "HELP",
+    "bottom": 207.8
+  },
+  {
+    "page": 48,
+    "step": "REF1",
+    "bottom": 479.9
+  },
+  {
+    "page": 49,
+    "step": "REF2",
+    "bottom": 469.9
+  }
+]

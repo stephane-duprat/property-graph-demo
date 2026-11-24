@@ -1,0 +1,722 @@
+[
+  {
+    "id": "00.1",
+    "page": 5,
+    "rect": [
+      53,
+      157.79999999999995,
+      545.2755905511812,
+      196.79999999999995
+    ],
+    "sql": "GRANT CREATE SESSION, CREATE TABLE, CREATE VIEW,\n      CREATE SYNONYM, CREATE PROPERTY GRAPH TO PG_DEMO;\nALTER USER PG_DEMO QUOTA 50M ON DATA;",
+    "module": "admin"
+  },
+  {
+    "id": "00.2",
+    "page": 5,
+    "rect": [
+      53,
+      470.49999999999994,
+      545.2755905511812,
+      557.5
+    ],
+    "sql": "SET SERVEROUTPUT ON\nSET DEFINE OFF\nSET AUTOCOMMIT OFF\nSET LINESIZE 180\nSET PAGESIZE 100\nSET LONG 20000\nSET LONGCHUNKSIZE 20000",
+    "module": "client"
+  },
+  {
+    "id": "01.1",
+    "page": 6,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      158.20000000000005
+    ],
+    "sql": "SELECT product, version, version_full FROM product_component_version;",
+    "module": "core"
+  },
+  {
+    "id": "01.2",
+    "page": 6,
+    "rect": [
+      53,
+      197.20000000000005,
+      545.2755905511812,
+      236.20000000000005
+    ],
+    "sql": "SELECT USER AS connected_user,\n       SYS_CONTEXT('USERENV', 'CURRENT_SCHEMA') AS current_schema\nFROM dual;",
+    "module": "core"
+  },
+  {
+    "id": "01.3",
+    "page": 6,
+    "rect": [
+      53,
+      275.20000000000005,
+      545.2755905511812,
+      470.20000000000005
+    ],
+    "sql": "SELECT privilege FROM session_privs\nWHERE privilege IN ('CREATE SESSION','CREATE TABLE','CREATE VIEW',\n                    'CREATE SYNONYM','CREATE PROPERTY GRAPH')\nORDER BY privilege;\n\nDECLARE\n  n NUMBER;\nBEGIN\n  SELECT COUNT(*) INTO n FROM user_objects\n  WHERE UPPER(object_name) LIKE 'PGD\\_%' ESCAPE '\\';\n  IF n <> 0 THEN\n    RAISE_APPLICATION_ERROR(-20000,\n      'PGD_ objects already exist. Use a fresh schema or review 99_cleanup.sql.');\n  END IF;\nEND;\n/",
+    "module": "core"
+  },
+  {
+    "id": "A1.1",
+    "page": 7,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      362.20000000000005
+    ],
+    "sql": "CREATE TABLE pgd_person (\n  person_id NUMBER CONSTRAINT pgd_person_pk PRIMARY KEY,\n  person_name VARCHAR2(50) NOT NULL,\n  city VARCHAR2(50) NOT NULL\n);\n\nCREATE TABLE pgd_knows (\n  edge_id NUMBER CONSTRAINT pgd_knows_pk PRIMARY KEY,\n  src_id NUMBER NOT NULL,\n  dst_id NUMBER NOT NULL,\n  since_year NUMBER(4) NOT NULL,\n  CONSTRAINT pgd_knows_src_fk FOREIGN KEY (src_id) REFERENCES pgd_person(person_id),\n  CONSTRAINT pgd_knows_dst_fk FOREIGN KEY (dst_id) REFERENCES pgd_person(person_id)\n);\n\nCREATE INDEX pgd_knows_src_ix ON pgd_knows(src_id);\n\nCREATE INDEX pgd_knows_dst_ix ON pgd_knows(dst_id);",
+    "module": "core"
+  },
+  {
+    "id": "A2.1",
+    "page": 8,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      328.20000000000005
+    ],
+    "sql": "INSERT INTO pgd_person VALUES (1, 'Alice', 'Madrid');\nINSERT INTO pgd_person VALUES (2, 'Bob', 'Barcelona');\nINSERT INTO pgd_person VALUES (3, 'Carla', 'Madrid');\nINSERT INTO pgd_person VALUES (4, 'Diego', 'Valencia');\nINSERT INTO pgd_person VALUES (5, 'Elena', 'Bilbao');\nINSERT INTO pgd_knows VALUES (101, 1, 2, 2020);\nINSERT INTO pgd_knows VALUES (102, 1, 3, 2021);\nINSERT INTO pgd_knows VALUES (103, 2, 4, 2022);\nINSERT INTO pgd_knows VALUES (104, 3, 4, 2023);\nINSERT INTO pgd_knows VALUES (105, 4, 1, 2024);\nINSERT INTO pgd_knows VALUES (106, 2, 5, 2022);\nINSERT INTO pgd_knows VALUES (107, 5, 3, 2024);\nCOMMIT;",
+    "module": "core"
+  },
+  {
+    "id": "A2.2",
+    "page": 8,
+    "rect": [
+      53,
+      367.20000000000005,
+      545.2755905511812,
+      406.20000000000005
+    ],
+    "sql": "SELECT * FROM pgd_person ORDER BY person_id;\n\nSELECT * FROM pgd_knows ORDER BY edge_id;",
+    "module": "core"
+  },
+  {
+    "id": "A3.1",
+    "page": 9,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      290.20000000000005
+    ],
+    "sql": "CREATE PROPERTY GRAPH pgd_rel_graph\n  VERTEX TABLES (\n    pgd_person AS people KEY (person_id)\n      LABEL person PROPERTIES (person_id, person_name AS name, city)\n  )\n  EDGE TABLES (\n    pgd_knows AS links KEY (edge_id)\n      SOURCE KEY (src_id) REFERENCES people (person_id)\n      DESTINATION KEY (dst_id) REFERENCES people (person_id)\n      LABEL knows PROPERTIES (edge_id, since_year)\n  )\n  OPTIONS (ENFORCED MODE);",
+    "module": "core"
+  },
+  {
+    "id": "A4.1",
+    "page": 10,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      230.20000000000005
+    ],
+    "sql": "SELECT neighbor, since_year\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (a IS person)-[e IS knows]->(b IS person)\n  WHERE a.person_id = 1\n  COLUMNS (b.name AS neighbor, e.since_year AS since_year)\n)\nORDER BY neighbor;",
+    "module": "core"
+  },
+  {
+    "id": "A4.2",
+    "page": 10,
+    "rect": [
+      53,
+      283.80000000000007,
+      545.2755905511812,
+      394.80000000000007
+    ],
+    "sql": "SELECT start_name, via_name, target_name\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (a IS person)-[e1 IS knows]->(b IS person)\n                     -[e2 IS knows]->(c IS person)\n  WHERE a.person_id = 1\n  COLUMNS (a.name AS start_name, b.name AS via_name,\n           c.name AS target_name)\n)\nORDER BY via_name, target_name;",
+    "module": "core"
+  },
+  {
+    "id": "A5.1",
+    "page": 11,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      254.20000000000005
+    ],
+    "sql": "SELECT a.person_name AS start_name, b.person_name AS via_name,\n       c.person_name AS target_name\nFROM pgd_person a\nJOIN pgd_knows e1 ON e1.src_id = a.person_id\nJOIN pgd_person b ON b.person_id = e1.dst_id\nJOIN pgd_knows e2 ON e2.src_id = b.person_id\nJOIN pgd_person c ON c.person_id = e2.dst_id\nWHERE a.person_id = 1\nORDER BY via_name, target_name;",
+    "module": "core"
+  },
+  {
+    "id": "A5.2",
+    "page": 11,
+    "rect": [
+      53,
+      322.4000000000001,
+      545.2755905511812,
+      421.4000000000001
+    ],
+    "sql": "SELECT target_name, COUNT(*) AS route_count\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (a IS person)-[e1 IS knows]->(b IS person)-[e2 IS knows]->(c IS person)\n  WHERE a.person_id = 1\n  COLUMNS (c.name AS target_name)\n)\nGROUP BY target_name\nORDER BY target_name;",
+    "module": "core"
+  },
+  {
+    "id": "A6.1",
+    "page": 12,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      280.20000000000005
+    ],
+    "sql": "SELECT start_name, via_name, third_name\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (a IS person)-[e1 IS knows]->(b IS person)\n                     -[e2 IS knows]->(c IS person)-[e3 IS knows]->(a)\n  WHERE a.person_id = 1 AND b.person_id <> a.person_id\n        AND c.person_id <> a.person_id AND b.person_id <> c.person_id\n  COLUMNS (a.name AS start_name, b.name AS via_name, c.name AS third_name)\n)\nORDER BY via_name;",
+    "module": "core"
+  },
+  {
+    "id": "A6.2",
+    "page": 12,
+    "rect": [
+      53,
+      363.00000000000006,
+      545.2755905511812,
+      474.00000000000006
+    ],
+    "sql": "SAVEPOINT pgd_before_rel_update;\nUPDATE pgd_person SET city = 'Sevilla' WHERE person_id = 4;\nSELECT person_id, person_name, city\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name, p.city AS city)\n)\nORDER BY person_id;\nROLLBACK TO pgd_before_rel_update;",
+    "module": "core"
+  },
+  {
+    "id": "B1.1",
+    "page": 13,
+    "rect": [
+      53,
+      183.79999999999995,
+      545.2755905511812,
+      294.79999999999995
+    ],
+    "sql": "CREATE JSON COLLECTION TABLE pgd_j_person (\n  person_id AS (JSON_VALUE(data, '$._id' RETURNING NUMBER ERROR ON ERROR))\n);\n\nCREATE JSON COLLECTION TABLE pgd_j_knows (\n  edge_id AS (JSON_VALUE(data, '$._id' RETURNING NUMBER ERROR ON ERROR)),\n  src_id AS (JSON_VALUE(data, '$.src' RETURNING NUMBER ERROR ON ERROR)),\n  dst_id AS (JSON_VALUE(data, '$.dst' RETURNING NUMBER ERROR ON ERROR))\n);",
+    "module": "core"
+  },
+  {
+    "id": "B2.1",
+    "page": 14,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      472.20000000000005
+    ],
+    "sql": "INSERT INTO pgd_j_person (data) VALUES (JSON(\n  '{\"_id\":1,\"name\":\"Alice\",\"city\":\"Madrid\"}'));\nINSERT INTO pgd_j_person (data) VALUES (JSON(\n  '{\"_id\":2,\"name\":\"Bob\",\"city\":\"Barcelona\"}'));\nINSERT INTO pgd_j_person (data) VALUES (JSON(\n  '{\"_id\":3,\"name\":\"Carla\",\"city\":\"Madrid\"}'));\nINSERT INTO pgd_j_person (data) VALUES (JSON(\n  '{\"_id\":4,\"name\":\"Diego\",\"city\":\"Valencia\"}'));\nINSERT INTO pgd_j_person (data) VALUES (JSON(\n  '{\"_id\":5,\"name\":\"Elena\",\"city\":\"Bilbao\"}'));\nINSERT INTO pgd_j_knows (data) VALUES (JSON('{\"_id\":101,\"src\":1,\"dst\":2,\"since\":2020}'\n  ));\nINSERT INTO pgd_j_knows (data) VALUES (JSON('{\"_id\":102,\"src\":1,\"dst\":3,\"since\":2021}'\n  ));\nINSERT INTO pgd_j_knows (data) VALUES (JSON('{\"_id\":103,\"src\":2,\"dst\":4,\"since\":2022}'\n  ));\nINSERT INTO pgd_j_knows (data) VALUES (JSON('{\"_id\":104,\"src\":3,\"dst\":4,\"since\":2023}'\n  ));\nINSERT INTO pgd_j_knows (data) VALUES (JSON('{\"_id\":105,\"src\":4,\"dst\":1,\"since\":2024}'\n  ));\nINSERT INTO pgd_j_knows (data) VALUES (JSON('{\"_id\":106,\"src\":2,\"dst\":5,\"since\":2022}'\n  ));\nINSERT INTO pgd_j_knows (data) VALUES (JSON('{\"_id\":107,\"src\":5,\"dst\":3,\"since\":2024}'\n  ));\nCOMMIT;",
+    "module": "core"
+  },
+  {
+    "id": "B3.1",
+    "page": 15,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      422.20000000000005
+    ],
+    "sql": "DECLARE\n  n NUMBER;\nBEGIN\n  SELECT COUNT(*) INTO n FROM (\n    SELECT person_id FROM pgd_j_person\n    GROUP BY person_id HAVING person_id IS NULL OR COUNT(*) > 1\n  );\n  IF n <> 0 THEN RAISE_APPLICATION_ERROR(-20011, 'Null or duplicate person keys'); END\n    IF;\n  SELECT COUNT(*) INTO n FROM (\n    SELECT edge_id FROM pgd_j_knows\n    GROUP BY edge_id HAVING edge_id IS NULL OR COUNT(*) > 1\n  );\n  IF n <> 0 THEN RAISE_APPLICATION_ERROR(-20012, 'Null or duplicate edge keys'); END\n    IF;\n  SELECT COUNT(*) INTO n FROM pgd_j_knows e\n  WHERE e.src_id IS NULL OR e.dst_id IS NULL\n     OR NOT EXISTS (SELECT 1 FROM pgd_j_person p WHERE p.person_id=e.src_id)\n     OR NOT EXISTS (SELECT 1 FROM pgd_j_person p WHERE p.person_id=e.dst_id);\n  IF n <> 0 THEN RAISE_APPLICATION_ERROR(-20013, 'Missing edge endpoints'); END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS: projected keys and endpoints are valid');\nEND;\n/",
+    "module": "core"
+  },
+  {
+    "id": "B4.1",
+    "page": 16,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      352.20000000000005
+    ],
+    "sql": "CREATE PROPERTY GRAPH pgd_json_graph\n  VERTEX TABLES (\n    pgd_j_person AS people KEY (person_id)\n      LABEL person PROPERTIES (person_id,\n        JSON_VALUE(data, '$.name' RETURNING VARCHAR2(50)) AS name,\n        JSON_VALUE(data, '$.city' RETURNING VARCHAR2(50)) AS city)\n  )\n  EDGE TABLES (\n    pgd_j_knows AS links KEY (edge_id)\n      SOURCE KEY (src_id) REFERENCES people (person_id)\n      DESTINATION KEY (dst_id) REFERENCES people (person_id)\n      LABEL knows PROPERTIES (edge_id, JSON_VALUE(data, '$.since' RETURNING NUMBER) AS\n        since_year)\n  )\n  OPTIONS (TRUSTED MODE);",
+    "module": "core"
+  },
+  {
+    "id": "B4.2",
+    "page": 16,
+    "rect": [
+      53,
+      391.20000000000005,
+      545.2755905511812,
+      502.20000000000005
+    ],
+    "sql": "SELECT start_name, via_name, target_name\nFROM GRAPH_TABLE (pgd_json_graph\n  MATCH (a IS person)-[e1 IS knows]->(b IS person)\n                     -[e2 IS knows]->(c IS person)\n  WHERE a.person_id = 1\n  COLUMNS (a.name AS start_name, b.name AS via_name,\n           c.name AS target_name)\n)\nORDER BY via_name, target_name;",
+    "module": "core"
+  },
+  {
+    "id": "B5.1",
+    "page": 17,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      196.20000000000005
+    ],
+    "sql": "SELECT person_id, JSON_SERIALIZE(data RETURNING CLOB PRETTY) AS document\nFROM pgd_j_person WHERE person_id = 4;",
+    "module": "core"
+  },
+  {
+    "id": "B5.2",
+    "page": 17,
+    "rect": [
+      53,
+      235.20000000000005,
+      545.2755905511812,
+      382.20000000000005
+    ],
+    "sql": "SAVEPOINT pgd_before_json_update;\nUPDATE pgd_j_person\nSET data = JSON_TRANSFORM(data, SET '$.city' = 'Sevilla')\nWHERE person_id = 4;\nSELECT person_id, person_name, city\nFROM GRAPH_TABLE (pgd_json_graph\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name, p.city AS city)\n)\nORDER BY person_id;\nSELECT person_name, city FROM pgd_person WHERE person_id = 4;\nROLLBACK TO pgd_before_json_update;",
+    "module": "core"
+  },
+  {
+    "id": "C1.1",
+    "page": 18,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      340.20000000000005
+    ],
+    "sql": "CREATE JSON RELATIONAL DUALITY VIEW pgd_people_dv AS\nSELECT JSON {\n  '_id' : p.person_id,\n  'name' : p.person_name,\n  'city' : p.city,\n  'outgoing' : (\n    SELECT JSON_ARRAYAGG(\n      JSON {'edge_id' : e.edge_id, 'to' : e.dst_id, 'since' : e.since_year}\n      RETURNING JSON)\n    FROM pgd_knows e WITH INSERT UPDATE DELETE\n    WHERE e.src_id = p.person_id\n  )\n}\nFROM pgd_person p WITH INSERT UPDATE DELETE;",
+    "module": "core"
+  },
+  {
+    "id": "C1.2",
+    "page": 18,
+    "rect": [
+      53,
+      491.20000000000005,
+      545.2755905511812,
+      530.2
+    ],
+    "sql": "SELECT JSON_SERIALIZE(data RETURNING CLOB PRETTY) AS alice_document\nFROM pgd_people_dv\nWHERE JSON_VALUE(data, '$._id' RETURNING NUMBER) = 1;",
+    "module": "core"
+  },
+  {
+    "id": "C2.1",
+    "page": 19,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      278.20000000000005
+    ],
+    "sql": "SAVEPOINT pgd_before_duality_update;\nUPDATE pgd_people_dv\nSET data = JSON_TRANSFORM(data, SET '$.city' = 'Sevilla')\nWHERE JSON_VALUE(data, '$._id' RETURNING NUMBER) = 4;\nSELECT person_id, person_name, city FROM pgd_person WHERE person_id = 4;\nSELECT person_id, person_name, city\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name, p.city AS city)\n)\nORDER BY person_id;",
+    "module": "core"
+  },
+  {
+    "id": "C2.2",
+    "page": 19,
+    "rect": [
+      53,
+      317.20000000000005,
+      545.2755905511812,
+      488.20000000000005
+    ],
+    "sql": "DECLARE\n  n NUMBER;\nBEGIN\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_rel_graph\n    MATCH (p IS person)\n    WHERE p.person_id = 4 AND p.city = 'Sevilla'\n    COLUMNS (p.person_id AS id));\n  IF n <> 1 THEN RAISE_APPLICATION_ERROR(-20021,\n    'pgd_rel_graph: city update not visible'); END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS pgd_rel_graph: Diego city is Sevilla');\nEND;\n/\n\nROLLBACK TO pgd_before_duality_update;",
+    "module": "core"
+  },
+  {
+    "id": "C3.1",
+    "page": 20,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      328.20000000000005
+    ],
+    "sql": "SAVEPOINT pgd_before_edge_insert;\nINSERT INTO pgd_knows VALUES (108, 1, 5, 2026);\nSELECT JSON_SERIALIZE(data RETURNING CLOB PRETTY) AS alice_document\nFROM pgd_people_dv\nWHERE JSON_VALUE(data, '$._id' RETURNING NUMBER) = 1;\nSELECT neighbor\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (a IS person)-[e IS knows]->(b IS person)\n  WHERE a.person_id = 1\n  COLUMNS (b.name AS neighbor)\n)\nORDER BY neighbor;\nROLLBACK TO pgd_before_edge_insert;",
+    "module": "core"
+  },
+  {
+    "id": "C3.2",
+    "page": 20,
+    "rect": [
+      53,
+      440.20000000000005,
+      545.2755905511812,
+      455.20000000000005
+    ],
+    "sql": "ROLLBACK;",
+    "module": "core"
+  },
+  {
+    "id": "V1.1",
+    "page": 21,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      398.20000000000005
+    ],
+    "sql": "DECLARE\n  n NUMBER;\nBEGIN\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_rel_graph MATCH (p IS person) COLUMNS\n    (p.person_id AS id));\n  IF n <> 5 THEN RAISE_APPLICATION_ERROR(-20001, 'pgd_rel_graph: expected 5 vertices'\n    ); END IF;\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_rel_graph MATCH (a IS person)-[e IS\n    knows]->(b IS person) COLUMNS (e.edge_id AS id));\n  IF n <> 7 THEN RAISE_APPLICATION_ERROR(-20002, 'pgd_rel_graph: expected 7 edges');\n    END IF;\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_rel_graph\n    MATCH (a IS person)-[e1 IS knows]->(b IS person)-[e2 IS knows]->(c IS person)\n    WHERE a.person_id = 1\n    COLUMNS (b.person_id AS via_id, c.person_id AS target_id)\n  );\n  IF n <> 3 THEN RAISE_APPLICATION_ERROR(-20003,\n    'pgd_rel_graph: expected 3 two-hop matches'); END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS pgd_rel_graph: 5 vertices, 7 edges, 3 two-hop matches');\nEND;\n/",
+    "module": "core"
+  },
+  {
+    "id": "V2.1",
+    "page": 22,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      398.20000000000005
+    ],
+    "sql": "DECLARE\n  n NUMBER;\nBEGIN\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_json_graph MATCH (p IS person) COLUMNS\n    (p.person_id AS id));\n  IF n <> 5 THEN RAISE_APPLICATION_ERROR(-20001, 'pgd_json_graph: expected 5 vertices'\n    ); END IF;\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_json_graph MATCH (a IS person)-[e IS\n    knows]->(b IS person) COLUMNS (e.edge_id AS id));\n  IF n <> 7 THEN RAISE_APPLICATION_ERROR(-20002, 'pgd_json_graph: expected 7 edges');\n    END IF;\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_json_graph\n    MATCH (a IS person)-[e1 IS knows]->(b IS person)-[e2 IS knows]->(c IS person)\n    WHERE a.person_id = 1\n    COLUMNS (b.person_id AS via_id, c.person_id AS target_id)\n  );\n  IF n <> 3 THEN RAISE_APPLICATION_ERROR(-20003,\n    'pgd_json_graph: expected 3 two-hop matches'); END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS pgd_json_graph: 5 vertices, 7 edges, 3 two-hop matches');\nEND;\n/",
+    "module": "core"
+  },
+  {
+    "id": "V3.1",
+    "page": 23,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      532.2
+    ],
+    "sql": "DECLARE\n  n NUMBER;\nBEGIN\n  WITH actual AS (\n    SELECT via_id, target_id FROM GRAPH_TABLE (pgd_rel_graph\n      MATCH (a IS person)-[e1 IS knows]->(b IS person)-[e2 IS knows]->(c IS person)\n      WHERE a.person_id = 1\n      COLUMNS (b.person_id AS via_id, c.person_id AS target_id))\n  ), expected AS (\n    SELECT 2 AS via_id, 4 AS target_id FROM dual UNION ALL\n    SELECT 2, 5 FROM dual UNION ALL SELECT 3, 4 FROM dual\n  ), missing_rows AS (SELECT * FROM expected MINUS SELECT * FROM actual),\n     unexpected_rows AS (SELECT * FROM actual MINUS SELECT * FROM expected)\n  SELECT (SELECT COUNT(*) FROM missing_rows) +\n         (SELECT COUNT(*) FROM unexpected_rows) INTO n FROM dual;\n  IF n <> 0 THEN RAISE_APPLICATION_ERROR(-20004, 'Two-hop route values differ'); END\n    IF;\n\n  SELECT COUNT(*) INTO n FROM pgd_person WHERE person_id = 4 AND city = 'Valencia';\n  IF n <> 1 THEN RAISE_APPLICATION_ERROR(-20005, 'Relational demo rollback failed');\n    END IF;\n  SELECT COUNT(*) INTO n FROM pgd_j_person\n  WHERE person_id = 4 AND JSON_VALUE(data, '$.city') = 'Valencia';\n  IF n <> 1 THEN RAISE_APPLICATION_ERROR(-20006, 'JSON demo rollback failed'); END IF;\n  SELECT COUNT(*) INTO n FROM pgd_people_dv;\n  IF n <> 5 THEN RAISE_APPLICATION_ERROR(-20007, 'Expected five duality documents');\n    END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS: expected routes and restored initial state');\nEND;\n/",
+    "module": "core"
+  },
+  {
+    "id": "V4.1",
+    "page": 24,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      218.20000000000005
+    ],
+    "sql": "SELECT graph_name, element_name, element_kind, object_name\nFROM user_pg_elements\nWHERE graph_name IN ('PGD_REL_GRAPH','PGD_JSON_GRAPH','PGD_DV_GRAPH')\nORDER BY graph_name, element_kind, element_name;\n\nSELECT 'CORE DEMO COMPLETED' AS status FROM dual;",
+    "module": "core"
+  },
+  {
+    "id": "D1.1",
+    "page": 25,
+    "rect": [
+      53,
+      183.79999999999995,
+      545.2755905511812,
+      426.79999999999995
+    ],
+    "sql": "CREATE VIEW pgd_dv_person_v AS\nSELECT j.person_id, j.person_name, j.city\nFROM pgd_people_dv d,\n     JSON_TABLE(d.data, '$' ERROR ON ERROR\n       COLUMNS (\n         person_id NUMBER PATH '$._id',\n         person_name VARCHAR2(50) PATH '$.name',\n         city VARCHAR2(50) PATH '$.city'\n       )) j;\n\nCREATE VIEW pgd_dv_knows_v AS\nSELECT JSON_VALUE(d.data, '$._id' RETURNING NUMBER ERROR ON ERROR) AS src_id,\n       j.edge_id, j.dst_id, j.since_year\nFROM pgd_people_dv d,\n     JSON_TABLE(d.data, '$.outgoing[*]' ERROR ON ERROR\n       COLUMNS (\n         edge_id NUMBER PATH '$.edge_id',\n         dst_id NUMBER PATH '$.to',\n         since_year NUMBER PATH '$.since'\n       )) j;",
+    "module": "duality"
+  },
+  {
+    "id": "D1.2",
+    "page": 25,
+    "rect": [
+      53,
+      465.79999999999995,
+      545.2755905511812,
+      492.79999999999995
+    ],
+    "sql": "SELECT * FROM pgd_dv_person_v ORDER BY person_id;\nSELECT * FROM pgd_dv_knows_v ORDER BY edge_id;",
+    "module": "duality"
+  },
+  {
+    "id": "D2.1",
+    "page": 26,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      506.20000000000005
+    ],
+    "sql": "DECLARE\n  n NUMBER;\n  TYPE id_list IS TABLE OF NUMBER;\n  person_ids id_list;\nBEGIN\n  SELECT COUNT(*) INTO n FROM (\n    SELECT person_id FROM pgd_dv_person_v\n    GROUP BY person_id HAVING person_id IS NULL OR COUNT(*) > 1\n  );\n  IF n <> 0 THEN RAISE_APPLICATION_ERROR(-20011, 'Null or duplicate person keys'); END\n    IF;\n  SELECT COUNT(*) INTO n FROM (\n    SELECT edge_id FROM pgd_dv_knows_v\n    GROUP BY edge_id HAVING edge_id IS NULL OR COUNT(*) > 1\n  );\n  IF n <> 0 THEN RAISE_APPLICATION_ERROR(-20012, 'Null or duplicate edge keys'); END\n    IF;\n  SELECT person_id BULK COLLECT INTO person_ids FROM pgd_dv_person_v;\n  FOR e IN (SELECT edge_id, src_id, dst_id FROM pgd_dv_knows_v) LOOP\n    IF e.src_id IS NULL OR e.dst_id IS NULL\n       OR person_ids.COUNT = 0\n       OR e.src_id NOT MEMBER OF person_ids\n       OR e.dst_id NOT MEMBER OF person_ids THEN\n      RAISE_APPLICATION_ERROR(-20013,\n        'Missing endpoint on edge ' || e.edge_id);\n    END IF;\n  END LOOP;\n  DBMS_OUTPUT.PUT_LINE('PASS: projected keys and endpoints are valid');\nEND;\n/",
+    "module": "duality"
+  },
+  {
+    "id": "D3.1",
+    "page": 27,
+    "rect": [
+      53,
+      183.79999999999995,
+      545.2755905511812,
+      450.79999999999995
+    ],
+    "sql": "CREATE PROPERTY GRAPH pgd_dv_graph\n  VERTEX TABLES (\n    pgd_dv_person_v AS people KEY (person_id)\n      LABEL person PROPERTIES (person_id, person_name AS name, city)\n  )\n  EDGE TABLES (\n    pgd_dv_knows_v AS links KEY (edge_id)\n      SOURCE KEY (src_id) REFERENCES people (person_id)\n      DESTINATION KEY (dst_id) REFERENCES people (person_id)\n      LABEL knows PROPERTIES (edge_id, since_year)\n  )\n  OPTIONS (TRUSTED MODE);\n\nSELECT start_name, via_name, target_name\nFROM GRAPH_TABLE (pgd_dv_graph\n  MATCH (a IS person)-[e1 IS knows]->(b IS person)\n                     -[e2 IS knows]->(c IS person)\n  WHERE a.person_id = 1\n  COLUMNS (a.name AS start_name, b.name AS via_name,\n           c.name AS target_name)\n)\nORDER BY via_name, target_name;",
+    "module": "duality"
+  },
+  {
+    "id": "D4.1",
+    "page": 28,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      424.20000000000005
+    ],
+    "sql": "DECLARE\n  n NUMBER;\nBEGIN\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_dv_graph MATCH (p IS person) COLUMNS\n    (p.person_id AS id));\n  IF n <> 5 THEN RAISE_APPLICATION_ERROR(-20001, 'pgd_dv_graph: expected 5 vertices');\n    END IF;\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_dv_graph MATCH (a IS person)-[e IS\n    knows]->(b IS person) COLUMNS (e.edge_id AS id));\n  IF n <> 7 THEN RAISE_APPLICATION_ERROR(-20002, 'pgd_dv_graph: expected 7 edges');\n    END IF;\n  SELECT COUNT(*) INTO n FROM GRAPH_TABLE (pgd_dv_graph\n    MATCH (a IS person)-[e1 IS knows]->(b IS person)-[e2 IS knows]->(c IS person)\n    WHERE a.person_id = 1\n    COLUMNS (b.person_id AS via_id, c.person_id AS target_id)\n  );\n  IF n <> 3 THEN RAISE_APPLICATION_ERROR(-20003,\n    'pgd_dv_graph: expected 3 two-hop matches'); END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS pgd_dv_graph: 5 vertices, 7 edges, 3 two-hop matches');\nEND;\n/",
+    "module": "duality"
+  },
+  {
+    "id": "D4.2",
+    "page": 28,
+    "rect": [
+      53,
+      463.20000000000005,
+      545.2755905511812,
+      670.2
+    ],
+    "sql": "SAVEPOINT pgd_before_optional_update;\nUPDATE pgd_people_dv\nSET data = JSON_TRANSFORM(data, SET '$.city' = 'Sevilla')\nWHERE JSON_VALUE(data, '$._id' RETURNING NUMBER) = 4;\nSELECT person_id, person_name, city\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name, p.city AS city)\n)\nORDER BY person_id;\nSELECT person_id, person_name, city\nFROM GRAPH_TABLE (pgd_dv_graph\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name, p.city AS city)\n)\nORDER BY person_id;\nROLLBACK TO pgd_before_optional_update;",
+    "module": "duality"
+  },
+  {
+    "id": "D4.3",
+    "page": 28,
+    "rect": [
+      53,
+      709.2,
+      545.2755905511812,
+      724.2
+    ],
+    "sql": "ROLLBACK;",
+    "module": "duality"
+  },
+  {
+    "id": "E0.1",
+    "page": 29,
+    "rect": [
+      53,
+      183.79999999999995,
+      545.2755905511812,
+      282.79999999999995
+    ],
+    "sql": "DECLARE\nBEGIN\n  IF DBMS_TRANSACTION.LOCAL_TRANSACTION_ID(FALSE) IS NOT NULL THEN\n    RAISE_APPLICATION_ERROR(-20030,\n      'Open transaction: finish it deliberately or use a fresh session.');\n  END IF;\nEND;\n/",
+    "module": "algorithms"
+  },
+  {
+    "id": "E0.2",
+    "page": 29,
+    "rect": [
+      53,
+      321.79999999999995,
+      545.2755905511812,
+      396.79999999999995
+    ],
+    "sql": "SELECT product, version_full FROM product_component_version;\n\nSELECT owner, object_name, status FROM all_objects\nWHERE owner = 'SYS' AND object_type = 'PACKAGE'\n  AND object_name IN ('DBMS_OGA', 'DBMS_GAF')\nORDER BY object_name;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E1.1",
+    "page": 30,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      290.20000000000005
+    ],
+    "sql": "SELECT person_id, person_name, ROUND(score, 6) AS pagerank_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PAGERANK(\n    pgd_rel_graph,\n    PROPERTY(VERTEX OUTPUT pr_score),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.pr_score AS score)\n)\nORDER BY score DESC, person_id;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E2.1",
+    "page": 31,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      316.20000000000005
+    ],
+    "sql": "SELECT DISTINCT target_name, ROUND(score, 6) AS pagerank_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PAGERANK(\n    pgd_rel_graph, PROPERTY(VERTEX OUTPUT pr_score),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (a IS person)-[e1 IS knows]->(b IS person)\n                     -[e2 IS knows]->(c IS person)\n  WHERE a.person_id = 1\n  COLUMNS (c.name AS target_name, c.pr_score AS score)\n)\nORDER BY pagerank_score DESC, target_name;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E3.1",
+    "page": 32,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      242.20000000000005
+    ],
+    "sql": "SELECT person_id, JSON_SERIALIZE(vertex_identifier RETURNING VARCHAR2(4000)) AS\n  vertex_identifier\nFROM GRAPH_TABLE (pgd_rel_graph\n  MATCH (p IS person)\n  WHERE p.person_id IN (1, 3)\n  COLUMNS (p.person_id AS person_id, VERTEX_ID(p) AS vertex_identifier)\n)\nORDER BY person_id;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E4.1",
+    "page": 33,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      374.20000000000005
+    ],
+    "sql": "SELECT person_id, person_name, ROUND(score, 6) AS alice_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PERSONALIZED_PAGERANK(\n    pgd_rel_graph,\n    PROPERTY(VERTEX OUTPUT ppr_score),\n    JSON_OBJECT(\n      'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n      'GRAPH_NAME' VALUE 'PGD_REL_GRAPH',\n      'ELEM_TABLE' VALUE 'PEOPLE',\n      'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n      RETURNING JSON\n    ),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.ppr_score AS score)\n)\nORDER BY score DESC, person_id;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E5.1",
+    "page": 34,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      494.20000000000005
+    ],
+    "sql": "SELECT person_id, person_name, ROUND(score, 6) AS seed_set_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PERSONALIZED_PAGERANK_SET(\n    pgd_rel_graph,\n    PROPERTY(VERTEX OUTPUT set_score),\n    JSON_ARRAY(\n      JSON_OBJECT(\n        'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n        'GRAPH_NAME' VALUE 'PGD_REL_GRAPH',\n        'ELEM_TABLE' VALUE 'PEOPLE',\n        'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n        RETURNING JSON\n      ),\n      JSON_OBJECT(\n        'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n        'GRAPH_NAME' VALUE 'PGD_REL_GRAPH',\n        'ELEM_TABLE' VALUE 'PEOPLE',\n        'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 3)\n        RETURNING JSON\n      )\n      RETURNING JSON\n    ),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.set_score AS score)\n)\nORDER BY score DESC, person_id;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E6.1",
+    "page": 35,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      278.20000000000005
+    ],
+    "sql": "SELECT component_id, COUNT(*) AS people_count,\n       LISTAGG(person_name, ', ') WITHIN GROUP (ORDER BY person_name) AS members\nFROM GRAPH_TABLE (\n  DBMS_OGA.WCC(\n    pgd_rel_graph, PROPERTY(VERTEX OUTPUT component_id)\n  )\n  MATCH (p IS person)\n  COLUMNS (p.name AS person_name, p.component_id AS component_id)\n)\nGROUP BY component_id\nORDER BY people_count DESC, members;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E7.1",
+    "page": 36,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      386.20000000000005
+    ],
+    "sql": "CREATE OR REPLACE PROPERTY GRAPH pgd_cost_graph\n  VERTEX TABLES (\n    pgd_person AS people KEY (person_id)\n      LABEL person PROPERTIES (person_id, person_name AS name, city)\n  )\n  EDGE TABLES (\n    pgd_knows AS links KEY (edge_id)\n      SOURCE KEY (src_id) REFERENCES people (person_id)\n      DESTINATION KEY (dst_id) REFERENCES people (person_id)\n      LABEL knows PROPERTIES (\n        edge_id, since_year,\n        1 AS hop_cost,\n        CASE edge_id\n          WHEN 101 THEN 1 WHEN 102 THEN 9 WHEN 103 THEN 2\n          WHEN 104 THEN 1 WHEN 105 THEN 1 WHEN 106 THEN 1\n          WHEN 107 THEN 1 ELSE 1\n        END AS effort\n      )\n  )\n  OPTIONS (ENFORCED MODE);",
+    "module": "algorithms"
+  },
+  {
+    "id": "E8.1",
+    "page": 37,
+    "rect": [
+      53,
+      169.20000000000005,
+      545.2755905511812,
+      400.20000000000005
+    ],
+    "sql": "SELECT person_id, person_name, min_hops\nFROM GRAPH_TABLE (\n  DBMS_OGA.BELLMAN_FORD(\n    pgd_cost_graph,\n    JSON_OBJECT(\n      'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n      'GRAPH_NAME' VALUE 'PGD_COST_GRAPH',\n      'ELEM_TABLE' VALUE 'PEOPLE',\n      'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n      RETURNING JSON\n    ),\n    PROPERTY(EDGE INPUT hop_cost DEFAULT ON NULL 1),\n    PROPERTY(VERTEX OUTPUT min_hops)\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.min_hops AS min_hops)\n)\nORDER BY person_id;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E9.1",
+    "page": 38,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      374.20000000000005
+    ],
+    "sql": "SELECT person_id, person_name, min_effort\nFROM GRAPH_TABLE (\n  DBMS_OGA.BELLMAN_FORD(\n    pgd_cost_graph,\n    JSON_OBJECT(\n      'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n      'GRAPH_NAME' VALUE 'PGD_COST_GRAPH',\n      'ELEM_TABLE' VALUE 'PEOPLE',\n      'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n      RETURNING JSON\n    ),\n    PROPERTY(EDGE INPUT effort DEFAULT ON NULL 1),\n    PROPERTY(VERTEX OUTPUT min_effort)\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.min_effort AS min_effort)\n)\nORDER BY person_id;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E10.1",
+    "page": 39,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      434.20000000000005
+    ],
+    "sql": "SELECT person_id, person_name, ROUND(score, 6) AS pagerank_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PAGERANK(\n    pgd_json_graph,\n    PROPERTY(VERTEX OUTPUT pr_score),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.pr_score AS score)\n)\nORDER BY score DESC, person_id;\n\nSELECT component_id, COUNT(*) AS people_count,\n       LISTAGG(person_name, ', ') WITHIN GROUP (ORDER BY person_name) AS members\nFROM GRAPH_TABLE (\n  DBMS_OGA.WCC(\n    pgd_json_graph, PROPERTY(VERTEX OUTPUT component_id)\n  )\n  MATCH (p IS person)\n  COLUMNS (p.name AS person_name, p.component_id AS component_id)\n)\nGROUP BY component_id\nORDER BY people_count DESC, members;",
+    "module": "algorithms"
+  },
+  {
+    "id": "E11.1",
+    "page": 40,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      350.20000000000005
+    ],
+    "sql": "DECLARE\n  n NUMBER;\n  n_components NUMBER;\nBEGIN\n  SELECT COUNT(*), COUNT(DISTINCT component_id)\n  INTO n, n_components\n  FROM GRAPH_TABLE (\n    DBMS_OGA.WCC(pgd_rel_graph, PROPERTY(VERTEX OUTPUT component_id))\n    MATCH (p IS person)\n    COLUMNS (p.component_id AS component_id)\n  );\n  IF n <> 5 OR n_components <> 1 THEN\n    RAISE_APPLICATION_ERROR(-20031, 'WCC: expected five vertices in one component');\n  END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS: WCC membership');\nEND;\n/",
+    "module": "algorithms"
+  },
+  {
+    "id": "E12.1",
+    "page": 41,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      398.20000000000005
+    ],
+    "sql": "DECLARE\n  n NUMBER;\n  total_score BINARY_DOUBLE;\n  lowest_score BINARY_DOUBLE;\nBEGIN\n  SELECT COUNT(*), SUM(score), MIN(score)\n  INTO n, total_score, lowest_score\n  FROM GRAPH_TABLE (\n    DBMS_OGA.PAGERANK(pgd_rel_graph, PROPERTY(VERTEX OUTPUT pr_score),\n                      1000, 1e-10, 0.85d, TRUE)\n    MATCH (p IS person)\n    COLUMNS (p.pr_score AS score)\n  );\n  IF n <> 5 OR total_score IS NULL OR ABS(total_score - 1) > 1e-8\n     OR lowest_score IS NULL OR lowest_score <= 0 THEN\n    RAISE_APPLICATION_ERROR(-20032,\n      'PageRank: expected five positive scores totaling approximately one');\n  END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS: PageRank normalization');\nEND;\n/",
+    "module": "algorithms"
+  },
+  {
+    "id": "E13.1",
+    "page": 42,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      518.2
+    ],
+    "sql": "DECLARE\n  n NUMBER;\nBEGIN\n  SELECT COUNT(*) INTO n FROM (\n    SELECT person_id, person_name, min_hops\n    FROM GRAPH_TABLE (\n      DBMS_OGA.BELLMAN_FORD(\n        pgd_cost_graph,\n        JSON_OBJECT(\n          'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n          'GRAPH_NAME' VALUE 'PGD_COST_GRAPH',\n          'ELEM_TABLE' VALUE 'PEOPLE',\n          'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n          RETURNING JSON\n        ),\n        PROPERTY(EDGE INPUT hop_cost DEFAULT ON NULL 1),\n        PROPERTY(VERTEX OUTPUT min_hops)\n      )\n      MATCH (p IS person)\n      COLUMNS (p.person_id AS person_id, p.name AS person_name,\n               p.min_hops AS min_hops)\n    )\n  )\n  WHERE min_hops = CASE person_id WHEN 1 THEN 0 WHEN 2 THEN 1 WHEN 3 THEN 1 WHEN 4\n    THEN 2 WHEN 5 THEN 2 END;\n  IF n <> 5 THEN\n    RAISE_APPLICATION_ERROR(-20033, 'Bellman-Ford: unexpected min_hops results');\n  END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS: Hop distances');\nEND;\n/",
+    "module": "algorithms"
+  },
+  {
+    "id": "E14.1",
+    "page": 43,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      518.2
+    ],
+    "sql": "DECLARE\n  n NUMBER;\nBEGIN\n  SELECT COUNT(*) INTO n FROM (\n    SELECT person_id, person_name, min_effort\n    FROM GRAPH_TABLE (\n      DBMS_OGA.BELLMAN_FORD(\n        pgd_cost_graph,\n        JSON_OBJECT(\n          'GRAPH_OWNER' VALUE SYS_CONTEXT('USERENV', 'SESSION_USER'),\n          'GRAPH_NAME' VALUE 'PGD_COST_GRAPH',\n          'ELEM_TABLE' VALUE 'PEOPLE',\n          'KEY_VALUE' VALUE JSON_OBJECT('PERSON_ID' VALUE 1)\n          RETURNING JSON\n        ),\n        PROPERTY(EDGE INPUT effort DEFAULT ON NULL 1),\n        PROPERTY(VERTEX OUTPUT min_effort)\n      )\n      MATCH (p IS person)\n      COLUMNS (p.person_id AS person_id, p.name AS person_name,\n               p.min_effort AS min_effort)\n    )\n  )\n  WHERE min_effort = CASE person_id WHEN 1 THEN 0 WHEN 2 THEN 1 WHEN 3 THEN 3 WHEN 4\n    THEN 3 WHEN 5 THEN 2 END;\n  IF n <> 5 THEN\n    RAISE_APPLICATION_ERROR(-20034, 'Bellman-Ford: unexpected min_effort results');\n  END IF;\n  DBMS_OUTPUT.PUT_LINE('PASS: Effort distances');\nEND;\n/",
+    "module": "algorithms"
+  },
+  {
+    "id": "E14.2",
+    "page": 43,
+    "rect": [
+      53,
+      601.0,
+      545.2755905511812,
+      616.0
+    ],
+    "sql": "SELECT 'ALGORITHM DEMO COMPLETED' AS status FROM dual;",
+    "module": "algorithms"
+  },
+  {
+    "id": "F1.1",
+    "page": 44,
+    "rect": [
+      53,
+      157.79999999999995,
+      545.2755905511812,
+      448.79999999999995
+    ],
+    "sql": "SELECT person_id, person_name, ROUND(score, 6) AS pagerank_score\nFROM GRAPH_TABLE (\n  DBMS_OGA.PAGERANK(\n    pgd_dv_graph,\n    PROPERTY(VERTEX OUTPUT pr_score),\n    1000, 1e-10, 0.85d, TRUE\n  )\n  MATCH (p IS person)\n  COLUMNS (p.person_id AS person_id, p.name AS person_name,\n           p.pr_score AS score)\n)\nORDER BY score DESC, person_id;\n\nSELECT component_id, COUNT(*) AS people_count,\n       LISTAGG(person_name, ', ') WITHIN GROUP (ORDER BY person_name) AS members\nFROM GRAPH_TABLE (\n  DBMS_OGA.WCC(\n    pgd_dv_graph, PROPERTY(VERTEX OUTPUT component_id)\n  )\n  MATCH (p IS person)\n  COLUMNS (p.name AS person_name, p.component_id AS component_id)\n)\nGROUP BY component_id\nORDER BY people_count DESC, members;",
+    "module": "duality_algorithms"
+  },
+  {
+    "id": "SHARE.1",
+    "page": 45,
+    "rect": [
+      53,
+      143.20000000000005,
+      545.2755905511812,
+      158.20000000000005
+    ],
+    "sql": "GRANT READ ON PROPERTY GRAPH pgd_rel_graph TO PG_READER;",
+    "module": "sharing"
+  },
+  {
+    "id": "SHARE.2",
+    "page": 45,
+    "rect": [
+      53,
+      328.60000000000014,
+      545.2755905511812,
+      379.60000000000014
+    ],
+    "sql": "SELECT name\nFROM system_privilege_map\nWHERE name LIKE '%PROPERTY GRAPH'\nORDER BY name;",
+    "module": "sharing"
+  },
+  {
+    "id": "CLEAN.1",
+    "page": 46,
+    "rect": [
+      53,
+      183.79999999999995,
+      545.2755905511812,
+      546.8
+    ],
+    "sql": "DECLARE\n  n NUMBER;\n  PROCEDURE drop_object(p_type VARCHAR2, p_name VARCHAR2) IS\n  BEGIN\n    SELECT COUNT(*) INTO n FROM user_objects\n    WHERE object_name = p_name AND object_type = p_type;\n    IF n > 0 THEN\n      EXECUTE IMMEDIATE 'DROP ' || p_type || ' ' || p_name;\n      DBMS_OUTPUT.PUT_LINE('Dropped ' || p_type || ' ' || p_name);\n    END IF;\n  END;\nBEGIN\n  drop_object('PROPERTY GRAPH','PGD_COST_GRAPH');\n  drop_object('PROPERTY GRAPH','PGD_DV_GRAPH');\n  drop_object('PROPERTY GRAPH','PGD_JSON_GRAPH');\n  drop_object('PROPERTY GRAPH','PGD_REL_GRAPH');\n  drop_object('VIEW','PGD_DV_KNOWS_V');\n  drop_object('VIEW','PGD_DV_PERSON_V');\n  drop_object('VIEW','PGD_PEOPLE_DV');\n  drop_object('TABLE','PGD_J_KNOWS');\n  drop_object('TABLE','PGD_J_PERSON');\n  drop_object('TABLE','PGD_KNOWS');\n  drop_object('TABLE','PGD_PERSON');\n  FOR r IN (SELECT synonym_name FROM user_synonyms\n            WHERE UPPER(synonym_name) IN ('PGD_PEOPLE_DV','PGD_J_PERSON','PGD_J_KNOWS'\n              )) LOOP\n    EXECUTE IMMEDIATE 'DROP SYNONYM \"' || REPLACE(r.synonym_name, '\"', '\"\"') || '\"';\n  END LOOP;\nEND;\n/",
+    "module": "cleanup"
+  }
+]
