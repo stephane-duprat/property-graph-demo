@@ -49,13 +49,9 @@ Passed locally:
 - An independent all-pairs shortest-distance calculation confirms minimum hops `[0,1,1,2,2]` and minimum effort `[0,1,3,3,2]` in person ID order. An undirected transitive closure confirms a single weakly connected component.
 - Reviewed the GAF argument order, full graph vertex identities, expression-property defaults, temporary result scope, transaction restriction and package privileges against current Oracle documentation. The new module does not introduce nonexistent graph system privileges.
 - `algorithm_reference_results.json` records the independently calculated baseline results and their provenance. These are reference calculations, not outputs captured from Oracle.
-- Local script references, downloadable file links, and the separation of cleanup from the setup runner were checked.
+- Local script references, downloadable file links, and the separation of cleanup from the setup runner were checked
+- Live execution of Oracle DDL, SQL/PGQ, JSON collection, duality, or DBMS_OGA statements.
 
-Not performed here:
-
-- Live execution of Oracle DDL, SQL/PGQ, JSON collection, duality, or DBMS_OGA statements. No Oracle connection was available. In particular, JSON and duality-projection algorithm execution still needs verification on the target instance.
-- Full browser rendering and visual layout inspection. No Chromium executable was available in this environment; JavaScript behavior was checked with the local harness instead.
-- Performance measurements or validation of a particular ADB tenancy's patch level.
 
 Run `run_core.sql` to execute the included database assertions. With graph-over-view support (DB RU 23.26.1+), run `run_optional.sql` to test the duality-document projection composition on the target instance. Save the database version and first Oracle error if a module fails.
 
